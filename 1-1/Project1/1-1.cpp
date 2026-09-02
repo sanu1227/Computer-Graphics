@@ -1,49 +1,71 @@
 #include <stdio.h>
-#include <Windows.h>
+#include <stdlib.h>
 #include <time.h>
 
-
 int main() {
+	const int SIZE = 4;
+
 	srand((unsigned int)time(NULL));
-	int matrix[4][4];
-	int matrix2[4][4];
-	int matrixM[4][4];
-	int rand1;
-	int rand2;
+
+	int matrix[SIZE][SIZE];
+	int matrix2[SIZE][SIZE];
+	int matrixM[SIZE][SIZE];
 
 	printf("matrix1\n");
-	for (int i = 0; i < 4; ++i) {
-		for (int y = 0; y < 4; ++y) {
-			rand1 = rand() % 9;
-			matrix[i][y] = rand1;
-			printf("%d ", matrix[i][y]);
+	for (int row = 0; row < SIZE; ++row) {
+		for (int col = 0; col < SIZE; ++col) {
+			matrix[row][col] = rand() % 9;
+			printf("%d ", matrix[row][col]);
 		}
 		printf("\n");
 	}
+
 	printf("\n");
 	printf("matrix2\n");
-	for (int i = 0; i < 4; ++i) {
-		for (int y = 0; y < 4; ++y) {
-			rand2 = rand() % 9;
-			matrix2[i][y] = rand2;
-			printf("%d ", matrix2[i][y]);
+	for (int row = 0; row < SIZE; ++row) {
+		for (int col = 0; col < SIZE; ++col) {
+			matrix2[row][col] = rand() % 9;
+			printf("%d ", matrix2[row][col]);
 		}
 		printf("\n");
 	}
 
 	printf("\n");
 	printf("matrixM\n");
-	for (int i = 0; i < 4; ++i) {
-		for (int y = 0; y < 4; ++y) {
-			matrixM[y][i] = matrix[y][0] * matrix2[0][i] + matrix[y][1] * matrix2[1][i] +
-				matrix[y][2] * matrix2[2][i] + matrix[y][3] * matrix2[3][i];
-			printf("%d ", matrixM[y][i]);
+	for (int row = 0; row < SIZE; ++row) {
+		for (int col = 0; col < SIZE; ++col) {
+			matrixM[row][col] = 0;
+
+			for (int k = 0; k < SIZE; ++k) {
+				matrixM[row][col] += matrix[row][k] * matrix2[k][col];
+			}
+
+			printf("%d ", matrixM[row][col]);
 		}
 		printf("\n");
 	}
 
+	int matrixA[SIZE][SIZE];
 	printf("\n");
 	printf("matrixA\n");
-	int matrixA[4][4];
+	for (int row = 0; row < SIZE; ++row) {
+		for (int col = 0; col < SIZE; ++col) {
+			matrixA[row][col] = matrix[row][col] + matrix2[row][col];
+			printf("%d ", matrixA[row][col]);
+		}
+		printf("\n");
+	}
 
+	int matrixD[SIZE][SIZE];
+	printf("\n");
+	printf("matrixD\n");
+	for (int row = 0; row < SIZE; ++row) {
+		for (int col = 0; col < SIZE; ++col) {
+			matrixD[row][col] = matrix[row][col] - matrix2[row][col];
+			printf("%d", matrixD);
+		}
+		printf("\n");
+	}
+
+	return 0;
 }

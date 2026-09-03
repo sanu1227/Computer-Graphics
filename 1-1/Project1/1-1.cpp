@@ -35,7 +35,7 @@ int main() {
 	printf("matrix1\n");
 	for (int row = 0; row < SIZE; ++row) {
 		for (int col = 0; col < SIZE; ++col) {
-			matrix[row][col] = rand() % 9;
+			matrix[row][col] = rand() % 10;
 			printf("%d ", matrix[row][col]);
 		}
 		printf("\n");
@@ -45,7 +45,7 @@ int main() {
 	printf("matrix2\n");
 	for (int row = 0; row < SIZE; ++row) {
 		for (int col = 0; col < SIZE; ++col) {
-			matrix2[row][col] = rand() % 9;
+			matrix2[row][col] = rand() % 10;
 			printf("%d ", matrix2[row][col]);
 		}
 		printf("\n");
@@ -202,8 +202,8 @@ matrixt1[3][1],matrixt1[3][2], matrixt1[3][3] };
 				matrixt2[2][0], matrixt2[2][1],matrixt2[2][2],
 				matrixt2[3][0],matrixt2[3][1], matrixt2[3][2] };
 
-			int RT2 = matrixt2[0][0] * det3(subt21) - matrix2[0][1] * det3(subt22) + matrix2[0][2] * det3(subt23) - matrix2[0][3] * det3(subt24);
-			cout << "matrix2R: " << RT2 << "\n";
+			int RT2 = matrixt2[0][0] * det3(subt21) - matrixt2[0][1] * det3(subt22) + matrixt2[0][2] * det3(subt23) - matrixt2[0][3] * det3(subt24);
+			cout << "matrix2TR: " << RT2 << "\n";
 		}
 		else if (command == "e") {
 			if (onoff1 == 0) {
@@ -378,7 +378,7 @@ matrixt1[3][1],matrixt1[3][2], matrixt1[3][3] };
 			printf("matrix1\n");
 			for (int row = 0; row < SIZE; ++row) {
 				for (int col = 0; col < SIZE; ++col) {
-					matrix[row][col] = rand() % 9;
+					matrix[row][col] = rand() % 10;
 					printf("%d ", matrix[row][col]);
 				}
 				printf("\n");
@@ -388,7 +388,7 @@ matrixt1[3][1],matrixt1[3][2], matrixt1[3][3] };
 			printf("matrix2\n");
 			for (int row = 0; row < SIZE; ++row) {
 				for (int col = 0; col < SIZE; ++col) {
-					matrix2[row][col] = rand() % 9;
+					matrix2[row][col] = rand() % 10;
 					printf("%d ", matrix2[row][col]);
 				}
 				printf("\n");

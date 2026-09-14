@@ -1,5 +1,0 @@
-﻿  1-2.cpp
-C:\Users\saenu\Desktop\code\Computer Graphics\Computer-Graphics\1-2\1-2\1-2.cpp(156,17): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\saenu\Desktop\code\Computer Graphics\Computer-Graphics\1-2\1-2\1-2.cpp(171,17): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\saenu\Desktop\code\Computer Graphics\Computer-Graphics\1-2\1-2\1-2.cpp(182,17): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-  1-2.vcxproj -> C:\Users\saenu\Desktop\code\Computer Graphics\Computer-Graphics\1-2\x64\Debug\1-2.exe

@@ -30,3 +30,23 @@
 *.exe
 *.out
 *.app
+
+# Visual Studio user data and generated build output
+.vs/
+**/.vs/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+**/x64/
+**/x86/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.ipch
+*.pdb
+*.ilk
+*.tlog
+*.lastbuildstate
+*.recipe

@@ -50,3 +50,6 @@ x86/
 *.tlog
 *.lastbuildstate
 *.recipe
+
+# Generated face-inspection output
+/warning up/1-6/1-6/result.txt

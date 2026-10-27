@@ -102,7 +102,7 @@ void CharCallback(GLFWwindow* window, unsigned int codepoint) {
 	if (codepoint >= '1' && codepoint <= '4') {
 		AddRectangle(static_cast<int>(codepoint - '0'));
 	}
-	else if (codepoint == '+') {
+	else if (codepoint == '+' || codepoint == '=') {
 		ResizeSelectedRectangle(0.03f);
 	}
 	else if (codepoint == '-') {

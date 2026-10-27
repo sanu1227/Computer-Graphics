@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-labelledby="title description">
+  <title id="title">Computer Graphics — Engineering Foundations</title>
+  <desc id="description">Dark violet banner with a wireframe cube and coordinate axes. C++, OpenGL, GLSL, and transformations.</desc>
+  <path fill="#0b1220" d="M0 0H1280V360H0Z"/>
+  <path fill="#111b2d" d="M872 0H1280V360H872Z"/>
+  <path stroke="#1c2940" stroke-width="1" d="M904 40V320M952 40V320M1000 40V320M1048 40V320M1096 40V320M1144 40V320M1192 40V320M872 72H1240M872 120H1240M872 168H1240M872 216H1240M872 264H1240M872 312H1240"/>
+  <path fill="#b59aff" d="M64 84H116V89H64Z"/>
+  <text x="64" y="65" fill="#b59aff" font-family="monospace" font-size="16" letter-spacing="2.2">ENGINEERING FOUNDATIONS / 02</text>
+  <text x="64" y="130" fill="#f6f8ff" font-family="sans-serif" font-size="54" font-weight="700">Computer Graphics</text>
+  <text x="64" y="180" fill="#a8b7cf" font-family="sans-serif" font-size="22">Geometry. Transformations. Motion.</text>
+  <text x="64" y="219" fill="#7485a2" font-family="monospace" font-size="14" letter-spacing="1">FROM VERTICES TO INTERACTIVE SCENES</text>
+  <path fill="#19233a" d="M64 268H159V308H64ZM175 268H332V308H175ZM348 268H448V308H348ZM464 268H668V308H464Z"/>
+  <text x="87" y="295" fill="#e1e7f4" font-family="monospace" font-size="17">C++</text>
+  <text x="195" y="295" fill="#e1e7f4" font-family="monospace" font-size="17">OPENGL 3.3</text>
+  <text x="371" y="295" fill="#e1e7f4" font-family="monospace" font-size="17">GLSL</text>
+  <text x="483" y="295" fill="#e1e7f4" font-family="monospace" font-size="17">TRANSFORMATIONS</text>
+  <path fill="#b59aff" fill-opacity="0.08" d="M951 125L1056 69L1161 125V239L1056 295L951 239Z"/>
+  <path fill="none" stroke="#b59aff" stroke-width="2.4" stroke-linejoin="round" d="M951 125L1056 69L1161 125L1056 181ZM951 125V239L1056 295L1161 239V125M1056 181V295"/>
+  <path fill="none" stroke="#685b98" stroke-width="1.6" stroke-dasharray="5 6" d="M1056 69V183L951 239M1056 183L1161 239"/>
+  <path fill="none" stroke="#d1c2ff" stroke-width="1.5" d="M1056 181L1210 263M1200 253L1210 263L1197 262M1056 181L912 260M917 249L912 260L925 260M1056 181V42M1050 52L1056 42L1062 52"/>
+  <text x="1202" y="286" fill="#b59aff" font-family="monospace" font-size="15">X</text>
+  <text x="901" y="281" fill="#b59aff" font-family="monospace" font-size="15">Y</text>
+  <text x="1070" y="48" fill="#b59aff" font-family="monospace" font-size="15">Z</text>
+  <path stroke="#27344b" stroke-width="1" d="M64 333H1216"/>
+</svg>

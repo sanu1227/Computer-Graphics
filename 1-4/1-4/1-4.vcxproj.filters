@@ -84,4 +84,10 @@
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="1-20.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="1-21.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="1-22.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="1-23.cpp"><Filter>Source Files</Filter></ClCompile>
+  </ItemGroup>
 </Project>

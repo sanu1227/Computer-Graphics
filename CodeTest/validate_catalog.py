@@ -75,6 +75,14 @@ void Box(glm::mat4 model,glm::vec3 color) {
     ::Box(model,color);
 }
 """]
+    if id=="I06":
+        chunks += ["""
+std::vector<glm::mat4> floorProbeModels;
+void Box(glm::mat4 model,glm::vec3 color) {
+    floorProbeModels.push_back(model);
+    ::Box(model,color);
+}
+"""]
     chunks += [feature["blocks"].get("G","")]
     for slot,signature in signatures.items():
         chunks+=["void "+signature+" {\n"+feature["blocks"].get(slot,"")+"\n}"]

@@ -315,7 +315,7 @@ if (button==GLFW_MOUSE_BUTTON_LEFT && action==GLFW_PRESS && clickItems.size()<5)
     clickItems.push_back({mouseX,mouseY});
 """, "D":"for (auto p:clickItems) Rect(p,{60,40},Yellow);"},
     "클릭한 논리 좌표에 사각형을 최대 5개 생성합니다.", "5=최대 개수, 60/40=너비/높이. 사분면은 x<400, y<300 비교로 나눕니다.",
-    "mouseX/mouseY는 이미 800×600 논리 좌표입니다. 사분면별 제한은 각 영역에 속한 기존 항목 수를 세어 같은 조건에 사용합니다.", ("I05","C06"))
+    "mouseX/mouseY는 이미 800×600 논리 좌표입니다. 사분면별 제한은 각 영역에 속한 기존 항목 수를 세어 같은 조건에 사용합니다. 3D 바닥에 육면체를 만들 때는 I06을 사용합니다.", ("I05","I06","C06"))
 add("I04","드래그","마우스 이동 오프셋 잡기 놓기", "2D", {"G":"""
 glm::vec2 dragCenter(400,300), dragOffset(0);
 bool dragging=false;
@@ -355,6 +355,103 @@ mouseX=375; mouseY=300; OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_PRESS);
 Require(selected==2,"topmost selection");
 mouseX=10; mouseY=10; OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_PRESS);
 Require(selected==-1,"empty selection");
+""")
+
+add("I06","클릭한 3D 바닥에 육면체 생성","마우스 클릭 위치 박스 상자 생성 바닥 3D 좌표 변환 광선 피킹 MouseToFloor", "3D", {"G":"""
+std::vector<glm::vec3> floorBoxes; // 생성한 박스들의 중심 위치
+const float boxSize=0.5f;         // 박스 한 변의 길이
+const float floorY=0.0f;          // 바닥 윗면 높이
+const float floorHalfSize=5.0f;   // 바닥 한쪽 길이: 전체 10 x 10
+
+bool MouseToFloor(glm::vec3& hit) {
+    int width,height;
+    glfwGetFramebufferSize(window,&width,&height);
+    if (width<=0 || height<=0 || mouseX<0 || mouseX>=CanvasWidth ||
+        mouseY<0 || mouseY>=CanvasHeight) return false;
+    // 클릭 시점의 카메라와 창 크기로 투영을 갱신
+    SetView(0,0,width,height,eye,target,cameraUp,perspective);
+    float x=2.0f*mouseX/CanvasWidth-1.0f;
+    float y=1.0f-2.0f*mouseY/CanvasHeight;
+    glm::mat4 inverse=glm::inverse(viewProjection);
+    glm::vec4 nearPoint=inverse*glm::vec4(x,y,-1,1);
+    glm::vec4 farPoint=inverse*glm::vec4(x,y,1,1);
+    if (std::abs(nearPoint.w)<0.000001f || std::abs(farPoint.w)<0.000001f)
+        return false;
+    nearPoint/=nearPoint.w;
+    farPoint/=farPoint.w;
+    glm::vec3 start(nearPoint),direction(farPoint-nearPoint);
+    if (std::abs(direction.y)<0.000001f) return false; // 바닥과 평행
+    float t=(floorY-start.y)/direction.y;
+    if (t<0 || t>1) return false; // 보이는 깊이 범위 밖
+    hit=start+direction*t;
+    return std::abs(hit.x)<=floorHalfSize && std::abs(hit.z)<=floorHalfSize;
+}
+""", "R":"floorBoxes.clear();", "M":"""
+if (button==GLFW_MOUSE_BUTTON_LEFT && action==GLFW_PRESS) {
+    glm::vec3 hit;
+    if (MouseToFloor(hit))
+        floorBoxes.push_back({hit.x,floorY+boxSize/2.0f,hit.z});
+}
+""", "D":"""
+// 바닥 윗면을 floorY에 맞춤
+Box(T({0,floorY-0.1f,0})*S({floorHalfSize*2,0.2f,floorHalfSize*2}),
+    {0.3f,0.35f,0.4f});
+for (auto p:floorBoxes)
+    Box(T(p)*S({boxSize,boxSize,boxSize}),Yellow);
+"""}, "바닥 안을 왼쪽 클릭할 때마다 그 위치에 육면체 하나를 생성합니다. 화면의 클릭 방향과 수평 바닥이 만나는 3D 위치를 구해 저장합니다. 박스 아랫면은 floorY에 닿으며, F5로 모두 지웁니다. 원근·직교 투영 모두 지원합니다.",
+    "boxSize=박스 한 변 길이, floorY=바닥 윗면 높이, floorHalfSize=바닥 중심에서 한쪽 끝까지의 길이입니다. boxSize와 floorHalfSize는 양수로 설정합니다. 두 크기 값은 장면 좌표 단위입니다. Yellow를 바꾸면 박스 색이 바뀝니다. 개수 제한은 없으며 필요하면 OnMouse 조건에 floorBoxes.size()<원하는개수를 추가합니다. 박스 위치는 vec3에 저장하고 OnDraw의 T(p)로 배치합니다.",
+    "전역 칸의 MouseToFloor 함수까지 함께 복사합니다. mouseX/mouseY를 3D 좌표로 직접 사용하지 않습니다. 전체 창 하나의 base 카메라 기준이며 P05 화면 분할이나 별도 투영에는 해당 화면의 좌표·투영을 사용하도록 변환을 바꿔야 합니다. 바닥 밖·평행한 시선·카메라가 볼 수 없는 깊이는 무시합니다. 박스 중심의 X/Z가 바닥 안인지 검사하므로 가장자리 박스는 일부가 바깥으로 나올 수 있습니다. 같은 위치를 반복 클릭하면 겹칩니다. 물체 표면 선택·쌓기는 포함하지 않으며, 물체 위를 클릭해도 그 아래 방향의 바닥과 교차합니다.",
+    ("I03","D06","D10","D11","P01"), """
+glm::vec3 hit;
+const glm::vec3 savedEye=eye,savedTarget=target,savedUp=cameraUp;
+const bool savedPerspective=perspective;
+auto pointMouseAt=[](glm::vec3 world) {
+    glm::vec4 screen=viewProjection*glm::vec4(world,1);
+    mouseX=(screen.x/screen.w+1)*CanvasWidth/2;
+    mouseY=(1-screen.y/screen.w)*CanvasHeight/2;
+};
+for(bool projection:{true,false}) {
+    perspective=projection;eye=savedEye;target=savedTarget;cameraUp=savedUp;
+    OnReset();viewProjection=glm::mat4(1);
+    mouseX=CanvasWidth/2;mouseY=CanvasHeight/2;
+    Require(MouseToFloor(hit)&&glm::length(hit-glm::vec3(0,floorY,0))<0.001f,
+        "floor center click refreshes camera before first frame");
+    const glm::vec3 points[]={{1.5f,floorY,2},{-2,floorY,-1},{0,floorY,3},
+        {1,floorY,-2},{-1,floorY,1},{2,floorY,0}};
+    for(auto p:points) {
+        pointMouseAt(p);
+        OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_PRESS);
+        Require(!floorBoxes.empty()&&glm::length(floorBoxes.back()-
+            glm::vec3(p.x,floorY+boxSize/2,p.z))<0.001f,"floor click mapped to world position");
+    }
+    Require(floorBoxes.size()==6,"floor click has no five-box limit");
+    OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_RELEASE);
+    OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_REPEAT);
+    OnMouse(GLFW_MOUSE_BUTTON_RIGHT,GLFW_PRESS);
+    pointMouseAt({0,floorY,floorHalfSize+0.5f});
+    Require(mouseX>=0&&mouseX<CanvasWidth&&mouseY>=0&&mouseY<CanvasHeight,
+        "outside-floor test stays inside window");
+    OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_PRESS);
+    mouseX=-1;OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_PRESS);
+    Require(floorBoxes.size()==6,"non-press and outside clicks ignored");
+    floorProbeModels.clear();BeginFrame();OnDraw();
+    Require(floorProbeModels.size()==7,"floor and all six boxes drawn");
+    Require(Near(glm::vec3(floorProbeModels[0]*glm::vec4(0,0.5f,0,1)).y,floorY),
+        "visible floor height matches picking plane");
+    for(int i=0;i<6;++i) {
+        glm::mat4 m=floorProbeModels[i+1];
+        Require(glm::length(glm::vec3(m*glm::vec4(0,0,0,1))-floorBoxes[i])<0.001f,
+            "stored center used when drawing box");
+        for(float x:{-0.5f,0.5f}) for(float z:{-0.5f,0.5f})
+            Require(Near(glm::vec3(m*glm::vec4(x,-0.5f,z,1)).y,floorY),"box rests on floor");
+    }
+    eye={0,5,9};target={0,5,0};mouseX=CanvasWidth/2;mouseY=CanvasHeight/2;
+    Require(!MouseToFloor(hit),"parallel floor ray ignored");
+    target={0,6,0};Require(!MouseToFloor(hit),"floor behind camera ignored");
+}
+eye=savedEye;target=savedTarget;cameraUp=savedUp;perspective=savedPerspective;
+mouseX=CanvasWidth/2;mouseY=CanvasHeight/2;OnReset();
+Require(floorBoxes.empty(),"reset clears floor boxes");
 """)
 
 add("M01","일정 속도 이동","직선 위치 속도 dt", "3D", {"G":"glm::vec3 movePosition(0), moveVelocity(1,0,0);",
@@ -690,6 +787,14 @@ for feature in FEATURES:
 
 # 인자 설명은 사용 참고서에만 표시한다. 기능모음집의 코드 칸은 변경하지 않는다.
 ARGUMENTS = {
+    "MouseToFloor": ("MouseToFloor(hit)", [
+        ("1 · hit (&)", "결과를 받을 vec3 변수입니다. 성공 시 클릭 방향과 바닥이 만나는 {x,floorY,z}가 저장됩니다. true를 반환했을 때만 사용합니다. 창 밖·바닥 밖·평행한 시선 등에서는 false를 반환합니다.")]),
+    "glm::inverse": ("glm::inverse(matrix)", [
+        ("1 · matrix", "역행렬을 구할 행렬입니다. I06은 viewProjection의 역행렬로 화면 방향을 3D 공간으로 되돌립니다. 변환된 vec4를 w로 나누어 실제 좌표를 구합니다.")]),
+    "glfwGetFramebufferSize": ("glfwGetFramebufferSize(window, width, height)", [
+        ("1 · window", "base에서 만든 GLFW 창 포인터입니다."),
+        ("2 · width (&변수)", "렌더링 영역의 가로 픽셀 수를 받을 int 변수의 주소입니다. 실제 코드는 &width를 전달합니다."),
+        ("3 · height (&변수)", "렌더링 영역의 세로 픽셀 수를 받을 int 변수의 주소입니다. 최소화 등으로 크기가 0이면 생성하지 않습니다. 마우스 논리 좌표 크기와 구분합니다.")]),
     "CheckerFloor": ("CheckerFloor(count=10, spacing=1, floorY=0, colorA={0.2,0.2,0.2}, colorB={0.8,0.8,0.8})", [
         ("1 · count", "한 변의 전체 칸 수, 1 이상의 정수. 3이면 3×3=9개 타일입니다. 홀수·짝수 모두 가능하며 생략 시 10. D10의 한쪽 칸 수 halfCount와 구분합니다."),
         ("2 · spacing", "한 칸의 길이, 0보다 큰 장면 좌표 단위. 전체 한 변은 count*spacing이며 원점을 중심으로 배치합니다. 생략 시 1."),
@@ -824,13 +929,14 @@ ARGUMENTS = {
         ("1 · x / 2 · y / 3 · z", "세 숫자를 전달하면 각 성분으로 저장합니다. 위치/방향에서는 X/Y/Z, 색으로 쓰면 R/G/B입니다."),
         ("1 · s (숫자 하나)", "세 성분을 모두 같은 값으로 만듭니다. glm::vec3(0)은 {0,0,0}입니다."),
         ("1 · v4 (vec4 하나)", "vec4의 x,y,z 성분만 가져오고 w는 제외합니다. 이 변환 자체가 w로 나누지는 않습니다.")]),
-    "glm::vec4": ("glm::vec4(v3, w)", [
+    "glm::vec4": ("glm::vec4(v3, w) / glm::vec4(x, y, z, w)", [
         ("1 · v3", "xyz에 넣을 3D 위치 또는 방향 벡터."),
-        ("2 · w", "1=위치라 이동 행렬의 영향을 받음, 0=방향이라 이동의 영향을 받지 않음. 카메라 시선 회전에는 0을 씁니다.")]),
+        ("2 · w (v3, w 형태)", "1=위치라 이동 행렬의 영향을 받음, 0=방향이라 이동의 영향을 받지 않음. 카메라 시선 회전에는 0을 씁니다."),
+        ("1 · x / 2 · y / 3 · z / 4 · w", "숫자 네 개를 전달하면 각 성분을 직접 설정합니다. I06의 화면 좌표에서는 z=-1이 가까운 면, z=1이 먼 면이며 w=1로 시작합니다.")]),
     "glm::mat4": ("glm::mat4(diagonal)", [
         ("1 · diagonal", "대각 성분 값. 1이면 대각만 1이고 나머지는 0인 단위행렬이 되어 모델 변형을 하지 않습니다. 모든 성분을 1로 채우는 의미가 아닙니다.")]),
     "push_back": ("items.push_back(value)", [
-        ("1 · value", "배열 끝에 추가할 항목 하나. clickItems에는 중심 {x,y}, fragments에는 {중심,속도}를 넣습니다.")]),
+        ("1 · value", "배열 끝에 추가할 항목 하나. clickItems에는 중심 {x,y}, floorBoxes에는 3D 중심 {x,y,z}, fragments에는 {중심,속도}를 넣습니다.")]),
     "std::remove_if": ("std::remove_if(first, last, predicate)", [
         ("1 · first", "검사할 범위의 시작 반복자. eraseItems.begin()입니다."),
         ("2 · last", "검사 범위 마지막 다음 반복자. eraseItems.end()이며 이 위치는 검사하지 않습니다."),
@@ -853,6 +959,7 @@ FEATURE_ARGUMENTS = {
     "I01":"OnKey Box glm::mat4", "I02":"OnUpdate glfwGetKey Box T glm::vec3",
     "I03":"OnMouse push_back Rect", "I04":"OnMouse OnCursor HitRect glm::vec2 Rect",
     "I05":"OnMouse HitRect Rect",
+    "I06":"MouseToFloor OnMouse glfwGetFramebufferSize SetView glm::inverse glm::vec3 glm::vec4 std::abs push_back Box T S",
     "M01":"OnUpdate Box T glm::vec3", "M02":"OnUpdate ReflectAxis std::abs glm::vec2 Rect",
     "M03":"OnUpdate std::fmod glm::vec2 Rect",
     "M04":"OnUpdate std::min std::sin std::cos glm::vec2 Circle",

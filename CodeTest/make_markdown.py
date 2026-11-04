@@ -160,6 +160,19 @@ A02의 판 그리기까지 추가하면 판이 두 개 생깁니다.
 - 기존 tilt를 `turn * T(pivot) * R(angle,{1,0,0}) * T(-pivot)`로 바꾼 경우에는 줄·좌석·사람 앞에 tilt만 붙입니다. turn을 두 번 곱하지 않습니다.
 - 진자 운동은 별도 실행 상태로 제어합니다. S키 처리에서 turnSpeed=0과 진자 실행 상태=false를 함께 설정하면 둘 다 멈춥니다.
 
+## 클릭한 3D 바닥에 육면체 만들기: I06
+
+1. I06의 전역 칸을 통째로 복사합니다. 위치 목록 floorBoxes, 크기·높이 설정과 MouseToFloor 함수가 함께 필요합니다.
+2. OnReset에서는 use2D=false와 floorBoxes.clear()를 사용합니다.
+3. OnMouse에서는 MouseToFloor(hit)가 true일 때 계산된 3D 중심을 저장합니다. I03의 mouseX/mouseY 저장 코드와 5개 제한은 이 기능에 포함되지 않습니다.
+4. OnDraw에서는 바닥을 한 번 그리고, 목록의 각 위치 p에 Box(T(p)*S(...),Yellow)를 호출합니다. glm::mat4(1)만 전달하면 모든 박스가 원점에 겹칩니다.
+5. 기존 구의 공전 등은 그대로 조합할 수 있습니다. I06에는 OnUpdate 코드가 필요하지 않습니다.
+
+이미 바닥이 있다면 I06의 바닥 그리기 한 줄은 추가하지 않고, 기존 바닥의 윗면 높이와 범위에 floorY/floorHalfSize를 맞춥니다.
+D11 체커 바닥과 조합할 때는 CheckerFloor(count,spacing,floorY)의 floorY를 공유하고 floorHalfSize=count*spacing/2로 설정합니다.
+base의 Ground() 윗면은 -0.05이므로 그 바닥을 사용할 때는 floorY=-0.05f로 맞춥니다.
+박스 중심 높이는 floorY+boxSize/2입니다. 박스 크기를 변경할 때는 코드의 boxSize를 바꾼 뒤 다시 실행합니다.
+
 ## 조건이 맞을 때만 이동·보간 시작: C02 + A03
 
 C02의 OverlapRect 판정은 true/false를 반환합니다. OnKey 또는 OnUpdate에서 이 조건을 검사해 시작 위치를 저장하고 진행률을 0으로 설정합니다.
@@ -219,6 +232,7 @@ readme="""# CodeTest
 | 판과 손잡이 함께 회전 | T04 |
 | 고른 객체만 X·Y·Z축 회전·시작·정지 | T08 |
 | 자동 왕복 기울기 | A02 |
+| 클릭한 3D 바닥 위치에 육면체 생성 | I06 |
 | 드래그와 스냅 | I04 + C03 |
 | 점프·착지 | C04 / C05 |
 | 공전·위성 | T06 / T07 |

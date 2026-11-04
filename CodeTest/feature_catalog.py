@@ -175,6 +175,69 @@ CheckerFloor(0,1);CheckerFloor(-1,1);CheckerFloor(3,0);CheckerFloor(3,-1);
 Require(checkerProbeTiles.empty(),"invalid checker settings");
 """)
 
+add("D12","방 만들기·앞면·천장·바닥 선택","방 공간 무대 벽 안쪽 면 컬링 Room 실습21 실습23", "3D", {"G":"""
+void DrawRoom(glm::mat4 parent,glm::vec3 low,glm::vec3 high,
+              bool front=false,bool ceiling=true,bool floor=true) {
+    if (low.x>=high.x || low.y>=high.y || low.z>=high.z) return;
+    glm::vec3 p[]={{low.x,low.y,high.z},{high.x,low.y,high.z},
+        {high.x,high.y,high.z},{low.x,high.y,high.z},
+        {low.x,low.y,low.z},{high.x,low.y,low.z},
+        {high.x,high.y,low.z},{low.x,high.y,low.z}};
+    const int faces[6][4]={{0,1,2,3},{1,5,6,2},{5,4,7,6},
+        {4,0,3,7},{3,2,6,7},{4,5,1,0}};
+    const glm::vec3 colors[]={{0.6f,0.4f,0.4f},{0.3f,0.5f,0.7f},
+        {0.4f,0.6f,0.5f},{0.6f,0.5f,0.3f},{0.5f,0.5f,0.6f},{0.35f,0.4f,0.45f}};
+    // 방 안쪽만 보이게 한다. 바깥에서 가까운 벽 너머로 내부를 볼 수 있다.
+    GLboolean wasCulling=glIsEnabled(GL_CULL_FACE);
+    GLint oldFront,oldCull;
+    glGetIntegerv(GL_FRONT_FACE,&oldFront);
+    glGetIntegerv(GL_CULL_FACE_MODE,&oldCull);
+    glEnable(GL_CULL_FACE);glFrontFace(GL_CCW);glCullFace(GL_BACK);
+    for(int f=0;f<6;++f) {
+        if ((f==0&&!front)||(f==4&&!ceiling)||(f==5&&!floor)) continue;
+        Primitive(GL_TRIANGLE_FAN,{p[faces[f][3]],p[faces[f][2]],
+            p[faces[f][1]],p[faces[f][0]]},parent,colors[f]);
+    }
+    glFrontFace(oldFront);glCullFace(oldCull);
+    if (!wasCulling) glDisable(GL_CULL_FACE);
+}
+""", "D":"""
+glm::mat4 room(1);
+DrawRoom(room,{-3,0,-4},{3,6,4});
+Box(room*T({0,0.5f,0}),Yellow);
+"""}, "안쪽이 보이는 얇은 면으로 방을 만듭니다. 기본 크기는 가로 6·높이 6·깊이 8, 바닥 높이 0입니다. 앞면(+Z)을 생략하고 나머지 다섯 면을 그립니다. 그리기 전 컬링 설정은 호출 후 복원합니다.",
+    "low/high는 방 안쪽의 최소/최대 좌표이며 각 성분 low<high로 설정합니다. front/ceiling/floor는 각 면 표시 여부입니다. room은 방 전체의 부모 행렬입니다. 벽 색은 colors 배열의 앞·오른쪽·뒤·왼쪽·천장·바닥 순서로 바꿉니다.",
+    "이 함수는 그리기만 합니다. 충돌 경계는 C08/C09에 같은 low/high를 전달합니다. 면을 숨겨도 충돌은 자동으로 꺼지지 않습니다. 내부 물체에도 room *를 붙이고, 위치·충돌 계산은 회전 전 방 좌표로 유지합니다. 전체 크기는 high-low로 정하며 parent에 음수 배율을 넣으면 면 방향이 뒤집힙니다.",
+    ("C08","C09","C10","T08","A08"), """
+const glm::vec3 low(-3,0,-4),high(3,6,4);
+GLboolean saved=glIsEnabled(GL_CULL_FACE);GLint savedFront,savedCull;
+glGetIntegerv(GL_FRONT_FACE,&savedFront);glGetIntegerv(GL_CULL_FACE_MODE,&savedCull);
+for(bool enabled:{false,true}) {
+    if(enabled) glEnable(GL_CULL_FACE);else glDisable(GL_CULL_FACE);
+    glFrontFace(GL_CW);glCullFace(GL_FRONT);
+    roomProbeFaces.clear();
+    glm::mat4 parent=T({1,2,-1})*R(30,{0,1,0});
+    DrawRoom(parent,low,high);
+    Require(roomProbeFaces.size()==5,"room default omits front face");
+    glm::vec3 center(parent*glm::vec4((low+high)/2.0f,1));
+    for(auto face:roomProbeFaces) {
+        glm::vec3 normal=glm::cross(face[1]-face[0],face[2]-face[0]);
+        Require(glm::dot(normal,center-face[0])>0,"room faces inward after parent rotation");
+    }
+    GLint front,cull;glGetIntegerv(GL_FRONT_FACE,&front);glGetIntegerv(GL_CULL_FACE_MODE,&cull);
+    Require(bool(glIsEnabled(GL_CULL_FACE))==enabled&&front==GL_CW&&cull==GL_FRONT,
+        "room restores previous culling state");
+}
+roomProbeFaces.clear();DrawRoom(glm::mat4(1),low,high,true,true,true);
+Require(roomProbeFaces.size()==6,"all room faces");
+roomProbeFaces.clear();DrawRoom(glm::mat4(1),low,high,false,false,false);
+Require(roomProbeFaces.size()==3,"room without front ceiling and floor");
+roomProbeFaces.clear();DrawRoom(glm::mat4(1),high,low);
+Require(roomProbeFaces.empty(),"invalid room bounds ignored");
+glFrontFace(savedFront);glCullFace(savedCull);
+if(saved) glEnable(GL_CULL_FACE);else glDisable(GL_CULL_FACE);
+""")
+
 add("T01","이동","위치 옮기기 T", "3D", {"D":"""
 Box(T({2,1,0}), Yellow);
 """}, "상자 중심을 지정한 좌표로 옮깁니다.", "T의 x,y,z가 중심 위치입니다.",
@@ -536,6 +599,43 @@ Primitive(GL_TRIANGLES, {{25,0,0},{-20,-15,0},{-20,15,0}},
 """}, "기본적으로 +X를 보는 삼각형을 이동 방향으로 돌립니다.", "direction을 현재 속도 또는 현재 위치-이전 위치로 바꿉니다.",
     "방향 길이가 0이면 이전 각도를 유지합니다. 3D에서 +Z를 보는 모델의 Y축 각도는 degrees(atan2(dx,dz))입니다.", ("M01","M03"))
 
+add("M08","기울어진 바닥에서 미끄러짐","방 기울기 경사 중력 낮은 쪽 실습21", "3D", {"G":"""
+float slopeAngle=0,slideX=0,slideSpeed=0;
+""", "R":"slopeAngle=slideX=slideSpeed=0;", "K":"""
+if(action==GLFW_PRESS || action==GLFW_REPEAT) {
+    if(key==GLFW_KEY_Q) slopeAngle=std::clamp(slopeAngle+5.0f,-45.0f,45.0f);
+    if(key==GLFW_KEY_E) slopeAngle=std::clamp(slopeAngle-5.0f,-45.0f,45.0f);
+}
+""", "U":"""
+// 양의 Z축 기울기에서는 오른쪽이 높으므로 왼쪽으로 미끄러짐
+slideSpeed += -6.0f*std::sin(glm::radians(slopeAngle))*dt;
+slideSpeed *= std::exp(-1.5f*dt); // 마찰에 의한 감쇠
+slideX += slideSpeed*dt;
+if(slideX < -2.7f) { slideX=-2.7f;slideSpeed=0; }
+if(slideX >  2.7f) { slideX= 2.7f;slideSpeed=0; }
+""", "D":"""
+glm::mat4 slope=R(slopeAngle,{0,0,1});
+Box(slope*T({0,-0.1f,0})*S({6,0.2f,8}),Blue);
+Box(slope*T({slideX,0.3f,0})*S({0.6f,0.6f,0.6f}),Yellow);
+"""}, "Q/E로 바닥의 Z축 기울기를 바꾸면 상자가 낮은 쪽으로 미끄러집니다. 바닥을 수평으로 되돌리면 속도가 서서히 줄어듭니다.",
+    "slopeAngle=도 단위 기울기, slideX=회전 전 방 좌표의 가로 위치, slideSpeed=초당 속도입니다. 6=경사 방향 중력 크기, 1.5=마찰 감쇠, 2.7=방 반너비 3에서 상자 반너비 0.3을 뺀 경계입니다. 각도 제한·방 크기·상자 크기를 함께 맞춥니다.",
+    "그리기에서 바닥과 상자에 같은 slope를 적용합니다. 양의 기울기 가속도는 -sin이므로 부호를 뒤집지 않습니다. 이 예제는 바닥에 붙어 X축으로 미끄러지는 단순 모형입니다. 공중 낙하는 A08/C04, 경계에서 반사는 C09로 별도 조합합니다.",
+    ("D12","C09","T08","A08"), """
+OnReset();OnUpdate(0.5f);
+Require(Near(slideX,0)&&Near(slideSpeed,0),"flat slope remains still");
+for(float a:{-20.0f,20.0f}) {
+    OnReset();slopeAngle=a;
+    glm::mat4 room=R(35,{0,1,0})*R(a,{0,0,1});
+    float before=glm::vec3(room*glm::vec4(0,0.3f,0,1)).y;
+    for(int i=0;i<20;++i) OnUpdate(0.01f);
+    float after=glm::vec3(room*glm::vec4(slideX,0.3f,0,1)).y;
+    Require(slideX*a<0&&after<before,"both slope signs move downhill in world space");
+}
+slideX=2.8f;slideSpeed=1;slopeAngle=0;OnUpdate(0.01f);
+Require(Near(slideX,2.7f)&&Near(slideSpeed,0),"slope stops at boundary");
+OnReset();
+""")
+
 add("C01","점이 사각형 안인지","클릭 히트 판정 HitRect", "2D", {"D":"""
 bool inside=HitRect(mouseX,mouseY,{400,300},{200,100});
 Rect({400,300},{200,100},inside ? Red : Blue);
@@ -652,6 +752,121 @@ OnMouse(GLFW_MOUSE_BUTTON_LEFT,GLFW_PRESS);
 Require(fragments.size()==4,"split only once");
 """)
 
+add("C08","방 밖으로 나가지 않게 이동 제한","방 벽 경계 막기 제한 크기 중심 반크기 WASD", "3D", {"G":"""
+glm::vec3 roomPosition(0,0.5f,0),roomHalfSize(0.5f);
+const glm::vec3 moveLow(-3,0,-4),moveHigh(3,6,4);
+bool KeepInRoom(glm::vec3& center,glm::vec3 halfSize,glm::vec3 low,glm::vec3 high) {
+    glm::vec3 lo=low+halfSize,hi=high-halfSize;
+    for(int a=0;a<3;++a)
+        if(halfSize[a]<0 || low[a]>=high[a] || lo[a]>hi[a]) return false;
+    center=glm::clamp(center,lo,hi);
+    return true;
+}
+""", "R":"roomPosition={0,0.5f,0};", "U":"""
+glm::vec3 input(0);
+if(glfwGetKey(window,GLFW_KEY_A)==GLFW_PRESS) input.x-=1;
+if(glfwGetKey(window,GLFW_KEY_D)==GLFW_PRESS) input.x+=1;
+if(glfwGetKey(window,GLFW_KEY_W)==GLFW_PRESS) input.z-=1;
+if(glfwGetKey(window,GLFW_KEY_S)==GLFW_PRESS) input.z+=1;
+if(glm::length(input)>0) roomPosition+=glm::normalize(input)*2.0f*dt;
+KeepInRoom(roomPosition,roomHalfSize,moveLow,moveHigh);
+""", "D":"Box(T(roomPosition)*S(roomHalfSize*2.0f),Yellow);"},
+    "WASD로 상자를 움직이고 상자의 표면이 방 밖으로 나가지 않게 중심 위치를 보정합니다. 대각선 이동도 같은 속도입니다.",
+    "moveLow/moveHigh는 방 안쪽 좌표입니다. roomHalfSize는 상자 전체 크기의 절반, roomPosition은 중심입니다. 2.0은 이동 속도입니다. D12의 방 경계와 같은 값을 사용합니다.",
+    "KeepInRoom은 위치만 제한하며 속도는 바꾸지 않습니다. 로봇 좌표가 발밑이면 중심=발밑+{0,반높이,0}로 바꿔 검사한 뒤 되돌립니다. 통과 가능한 문·열린 바닥의 경계는 따로 제외해야 합니다. 물체가 방에 들어갈 수 없으면 false를 반환하고 위치를 바꾸지 않습니다.",
+    ("D12","C09","C10","C04","C05"), """
+glm::vec3 p(99,-5,-99);
+Require(KeepInRoom(p,{0.5f,1,0.25f},moveLow,moveHigh),"box fits room");
+Require(glm::length(p-glm::vec3(2.5f,1,-3.75f))<0.001f,"room accounts for half size");
+p={0,2,0};KeepInRoom(p,{0.5f,1,0.25f},moveLow,moveHigh);
+Require(glm::length(p-glm::vec3(0,2,0))<0.001f,"interior position unchanged");
+Require(!KeepInRoom(p,{4,1,1},moveLow,moveHigh)&&Near(p.y,2),"oversized box rejected");
+Require(!KeepInRoom(p,{-1,1,1},moveLow,moveHigh),"negative half size rejected");
+""")
+
+add("C09","3D 방의 벽·바닥·천장에서 반사","공 구 바운스 방 튕기기 반지름 실습21", "3D", {"G":"""
+glm::vec3 ballPosition(0,2,0),ballVelocity(2,1.5f,1);
+const float ballRadius=0.3f;
+const glm::vec3 bounceLow(-3,0,-4),bounceHigh(3,6,4);
+bool BounceInRoom(glm::vec3& center,glm::vec3& velocity,float radius,
+                  glm::vec3 low,glm::vec3 high) {
+    if(radius<=0) return false;
+    glm::vec3 lo=low+glm::vec3(radius),hi=high-glm::vec3(radius);
+    for(int a=0;a<3;++a) if(low[a]>=high[a] || lo[a]>=hi[a]) return false;
+    for(int a=0;a<3;++a) {
+        if(center[a]<lo[a]) { center[a]=lo[a];velocity[a]= std::abs(velocity[a]); }
+        if(center[a]>hi[a]) { center[a]=hi[a];velocity[a]=-std::abs(velocity[a]); }
+    }
+    return true;
+}
+""", "R":"ballPosition={0,2,0};ballVelocity={2,1.5f,1};", "U":"""
+ballPosition+=ballVelocity*dt;
+BounceInRoom(ballPosition,ballVelocity,ballRadius,bounceLow,bounceHigh);
+""", "D":"Sphere(T(ballPosition)*S(glm::vec3(ballRadius)),Yellow);"},
+    "공이 방의 여섯 경계에 닿으면 해당 축의 속도만 반대로 바꿉니다. 반지름을 고려해 공 표면이 벽에 닿게 합니다.",
+    "ballVelocity의 x/y/z가 각 축의 초당 이동량입니다. ballRadius는 그리기와 충돌에 함께 사용됩니다. 여러 공은 위치·속도를 struct와 vector에 저장하고 각 공에 BounceInRoom을 호출합니다.",
+    "초과 이동 거리는 버리고 중심을 경계에 보정하는 학습용 반사입니다. 매우 빠른 공의 정확한 충돌 시각 계산은 별도입니다. 바닥을 연 뒤에는 이 함수의 Y축 하한 반사를 그대로 호출하면 낙하가 막힙니다. A08처럼 바닥 지지를 해제하고, 필요한 벽만 별도로 검사합니다. 숨긴 앞면도 충돌 경계에는 포함됩니다.",
+    ("D12","C08","M08","A08"), """
+for(int a=0;a<3;++a) for(float sign:{-1.0f,1.0f}) {
+    glm::vec3 p(0,2,0),v(2,3,4);
+    p[a]=sign<0 ? bounceLow[a]-1 : bounceHigh[a]+1;
+    float speed=glm::length(v);
+    Require(BounceInRoom(p,v,ballRadius,bounceLow,bounceHigh),"sphere fits room");
+    Require(Near(p[a],sign<0?bounceLow[a]+ballRadius:bounceHigh[a]-ballRadius)&&v[a]*sign<0,
+        "all six room boundaries reflect inward");
+    Require(Near(glm::length(v),speed),"wall reflection preserves speed magnitude");
+}
+OnReset();for(int i=0;i<400;++i) {
+    OnUpdate(0.05f);
+    for(int a=0;a<3;++a) Require(ballPosition[a]>=bounceLow[a]+ballRadius-0.001f&&
+        ballPosition[a]<=bounceHigh[a]-ballRadius+0.001f,"sphere stays within room");
+}
+Require(!BounceInRoom(ballPosition,ballVelocity,9,bounceLow,bounceHigh),"oversized sphere rejected");
+OnReset();
+""")
+
+add("C10","3D 장애물에 막히면 방향 바꾸기","방 로봇 걷기 장애물 옆면 충돌 AABB 실습23", "3D", {"G":"""
+struct RoomObstacle { glm::vec3 center,size; };
+std::vector<RoomObstacle> roomObstacles={{{0,0.5f,0},{1,1,1}},{{1.5f,0.75f,-2},{1,1.5f,1}}};
+glm::vec3 walkerCenter(-2,0.5f,0),walkerVelocity(1.4f,0,0);
+const glm::vec3 walkerSize(0.6f,1,0.6f);
+bool BoxOverlap3D(glm::vec3 a,glm::vec3 sizeA,glm::vec3 b,glm::vec3 sizeB) {
+    glm::vec3 gap=glm::abs(a-b),limit=(sizeA+sizeB)/2.0f;
+    return gap.x<limit.x && gap.y<limit.y && gap.z<limit.z;
+}
+""", "R":"walkerCenter={-2,0.5f,0};walkerVelocity={1.4f,0,0};", "U":"""
+// 기본 속도에서 장애물을 건너뛰지 않도록 작은 시간 간격으로 검사
+int steps=std::max(1,int(std::ceil(dt/0.005f)));
+float stepTime=dt/steps;
+for(int i=0;i<steps;++i) {
+    glm::vec3 next=walkerCenter+walkerVelocity*stepTime;
+    bool blocked=std::abs(next.x)>3-walkerSize.x/2 || std::abs(next.z)>4-walkerSize.z/2;
+    for(auto obstacle:roomObstacles)
+        if(BoxOverlap3D(next,walkerSize,obstacle.center,obstacle.size)) blocked=true;
+    if(blocked) walkerVelocity=-walkerVelocity;
+    else walkerCenter=next;
+}
+""", "D":"""
+for(auto obstacle:roomObstacles)
+    Box(T(obstacle.center)*S(obstacle.size),Blue);
+Box(T(walkerCenter)*S(walkerSize),Yellow);
+"""}, "상자가 자동으로 걷다가 방의 X/Z 경계나 장애물 옆면에 막히면 반대 방향으로 움직입니다. 서로 닿기만 한 면은 겹침으로 보지 않아 장애물 윗면 위에서 수평 이동할 수 있습니다.",
+    "roomObstacles의 center/size는 장애물 중심과 전체 크기입니다. walkerCenter도 몸 중심이며 walkerSize는 전체 크기입니다. walkerVelocity는 수평 속도입니다. 3/4는 방의 X/Z 반범위이며 D12와 맞춥니다.",
+    "단순 축 정렬 상자 충돌입니다. 별도로 회전한 장애물의 정밀 메시 충돌은 아닙니다. 0.005초 간격 검사는 기본 크기·속도를 위한 것이며 매우 빠른 이동이나 작은 물체에는 간격을 줄이거나 연속 충돌 검사를 사용합니다. 충돌 때 멈추려면 속도 반전 대신 속도를 0으로 만듭니다. 점프·착지는 C04/C05의 발밑 높이와 연결하고 중력을 중복 갱신하지 않습니다.",
+    ("D12","C08","C04","C05","M07"), """
+Require(BoxOverlap3D({0,0.5f,0},walkerSize,{0,0.5f,0},{1,1,1}),"overlapping boxes blocked");
+Require(!BoxOverlap3D({0,1.5f,0},walkerSize,{0,0.5f,0},{1,1,1}),"standing on top is not side collision");
+Require(!BoxOverlap3D({2,0.5f,0},walkerSize,{0,0.5f,0},{1,1,1}),"separated boxes pass");
+OnReset();bool reversed=false;
+for(int i=0;i<600;++i) {
+    OnUpdate(0.01f);if(walkerVelocity.x<0) reversed=true;
+    Require(std::abs(walkerCenter.x)<=3-walkerSize.x/2+0.001f,"walker remains inside room");
+    for(auto obstacle:roomObstacles)
+        Require(!BoxOverlap3D(walkerCenter,walkerSize,obstacle.center,obstacle.size),"walker never enters obstacle");
+}
+Require(reversed,"obstacle reverses walking direction");OnReset();
+""")
+
 add("A01","일정 시간마다 실행","타이머 주기 누적", "3D", {"G":"float timerElapsed=0;\nbool timerBlue=false;",
 "R":"timerElapsed=0; timerBlue=false;", "U":"""
 timerElapsed += dt;
@@ -722,6 +937,42 @@ Primitive(GL_TRIANGLE_FAN,{b[3],b[2],b[1],b[0]},glm::mat4(1),Red);
     "u=0이면 사각뿔, 1이면 육면체. 2=높이. A03의 progress를 u에 연결하면 애니메이션입니다.",
     "정점 수와 연결 순서를 유지하면서 좌표만 보간합니다.", ("D08","A03"))
 
+add("A08","바닥 열기와 아래로 낙하","방 바닥 문 경첩 열림 중력 떨어짐 실습21", "3D", {"G":"""
+bool hatchOpen=false,hatchFalling=false;
+float hatchAngle=0,fallCenterY=0.3f,fallSpeed=0;
+glm::mat4 HatchModel(float degrees) {
+    return T({-3,0,0})*R(-degrees,{0,0,1})*T({3,-0.1f,0})*S({6,0.2f,8});
+}
+""", "R":"hatchOpen=hatchFalling=false;hatchAngle=fallSpeed=0;fallCenterY=0.3f;", "K":"""
+if(key==GLFW_KEY_O && action==GLFW_PRESS) hatchOpen=!hatchOpen;
+""", "U":"""
+float targetAngle=hatchOpen ? 90.0f : 0.0f;
+hatchAngle+=std::clamp(targetAngle-hatchAngle,-90.0f*dt,90.0f*dt);
+if(hatchAngle>5.0f) hatchFalling=true;
+if(hatchFalling) {
+    fallSpeed-=9.8f*dt;
+    fallCenterY+=fallSpeed*dt;
+}
+""", "D":"""
+Box(HatchModel(hatchAngle),Blue);
+Box(T({0,fallCenterY,0})*S({0.6f,0.6f,0.6f}),Yellow);
+"""}, "O로 바닥을 왼쪽 모서리 중심으로 아래로 열고 닫습니다. 5도를 넘겨 열면 상자가 아래로 떨어집니다. 떨어지기 시작한 상자는 바닥을 닫아도 계속 낙하하며 F5로 복원합니다.",
+    "HatchModel의 {-3,0,0}=왼쪽 위 경첩, {3,-0.1,0}=경첩에서 바닥 중심까지의 거리, {6,0.2,8}=바닥 크기입니다. 90은 최대 열림 각도와 초당 회전 속도입니다. 9.8은 중력, 0.3은 상자 반높이입니다.",
+    "열림 각도 5도를 기준으로 바닥 지지를 끄는 학습용 모형입니다. 움직이는 바닥 면과의 정밀 접촉·충돌은 계산하지 않습니다. 방에 넣을 때 D12의 floor=false로 고정 바닥을 생략하고 room * HatchModel(...)을 그립니다. 아래로 떨어진 물체에 C08/C09의 바닥 제한을 적용하면 낙하가 막힙니다.",
+    ("D12","C09","M08","A06","C04"), """
+for(float a:{0.0f,45.0f,90.0f})
+    Require(glm::length(glm::vec3(HatchModel(a)*glm::vec4(-0.5f,0.5f,0,1))-
+        glm::vec3(-3,0,0))<0.001f,"hatch upper left hinge stays fixed");
+OnReset();OnUpdate(1);
+Require(Near(fallCenterY,0.3f)&&!hatchFalling,"closed hatch supports box");
+OnKey(GLFW_KEY_O,GLFW_REPEAT,0);Require(!hatchOpen,"hatch ignores repeated key");
+OnKey(GLFW_KEY_O,GLFW_PRESS,0);OnUpdate(0.2f);
+Require(hatchAngle>5&&hatchFalling&&fallCenterY<0.3f,"open hatch triggers fall");
+float previous=fallCenterY;OnKey(GLFW_KEY_O,GLFW_PRESS,0);OnUpdate(1);
+Require(Near(hatchAngle,0)&&fallCenterY<previous,"closing does not teleport fallen box");
+OnReset();Require(Near(fallCenterY,0.3f)&&!hatchFalling,"hatch reset restores box");
+""")
+
 add("P01","카메라 위치·투영 전환","시점 원근 직교 perspective", "3D", {"R":"""
 eye={6,5,9}; target={0,0,0}; cameraUp={0,1,0}; perspective=true;
 """, "K":"if(key==GLFW_KEY_P && action==GLFW_PRESS) perspective=!perspective;",
@@ -787,6 +1038,40 @@ for feature in FEATURES:
 
 # 인자 설명은 사용 참고서에만 표시한다. 기능모음집의 코드 칸은 변경하지 않는다.
 ARGUMENTS = {
+    "DrawRoom": ("DrawRoom(parent, low, high, front=false, ceiling=true, floor=true)", [
+        ("1 · parent", "방 전체의 이동·회전 행렬입니다. glm::mat4(1)은 기본 위치, room 행렬을 내부 물체에도 적용하면 함께 움직입니다."),
+        ("2 · low", "방 안쪽 X/Y/Z 최소 좌표입니다. {-3,0,-4}이면 왼쪽 -3, 바닥 0, 뒤쪽 -4입니다."),
+        ("3 · high", "방 안쪽 X/Y/Z 최대 좌표입니다. {3,6,4}이면 오른쪽 3, 천장 6, 앞쪽 4입니다. 전체 크기는 high-low입니다."),
+        ("4 · front", "앞면(+Z) 표시 여부입니다. 생략하면 false입니다. 충돌 경계를 해제하는 인자는 아닙니다."),
+        ("5 · ceiling", "천장 표시 여부입니다. 기본 true입니다."),
+        ("6 · floor", "바닥 표시 여부입니다. 기본 true입니다. A08의 여는 바닥을 붙일 때 false로 설정합니다.")]),
+    "KeepInRoom": ("KeepInRoom(center, halfSize, low, high)", [
+        ("1 · center (&)", "물체 중심 위치입니다. 방 안으로 보정한 결과가 원본에 저장됩니다. 설정이 유효하면 true, 크기가 들어갈 수 없으면 false입니다."),
+        ("2 · halfSize", "물체의 가로·높이·깊이 절반입니다. 전체 크기가 {1,2,1}이면 {0.5,1,0.5}입니다. 음수는 허용하지 않습니다."),
+        ("3 · low / 4 · high", "방 안쪽의 최소·최대 좌표입니다. 중심은 low+halfSize부터 high-halfSize 사이로 제한됩니다.")]),
+    "BounceInRoom": ("BounceInRoom(center, velocity, radius, low, high)", [
+        ("1 · center (&)", "공의 중심 위치입니다. 경계를 벗어나면 반지름을 고려해 원본 위치를 보정합니다."),
+        ("2 · velocity (&)", "공의 X/Y/Z 초당 속도입니다. 충돌한 축의 부호를 방 안쪽으로 바꿉니다."),
+        ("3 · radius", "공의 반지름입니다. 양수이며 방의 모든 변 길이가 지름보다 커야 합니다. 유효하면 true, 잘못된 설정은 false를 반환합니다."),
+        ("4 · low / 5 · high", "방 안쪽 최소·최대 좌표입니다. 공을 그리는 Sphere 배율에도 같은 radius를 사용합니다.")]),
+    "BoxOverlap3D": ("BoxOverlap3D(a, sizeA, b, sizeB)", [
+        ("1 · a / 3 · b", "두 물체의 중심 위치입니다. 발밑 좌표라면 반높이를 더해서 중심으로 바꿉니다."),
+        ("2 · sizeA / 4 · sizeB", "두 물체의 전체 가로·높이·깊이입니다. 각 성분은 양수로 설정합니다. 세 축 모두 실제로 겹치면 true이며 면이 닿기만 하면 false입니다.")]),
+    "HatchModel": ("HatchModel(degrees)", [
+        ("1 · degrees", "바닥의 열림 각도입니다. 예제는 0=닫힘, 90=수직으로 열린 상태입니다. {-3,0,0} 모서리가 고정되는 모델 행렬을 반환합니다.")]),
+    "glm::clamp": ("glm::clamp(value, low, high)", [
+        ("1 · value", "제한할 벡터입니다. C08에서는 물체 중심입니다."),
+        ("2 · low / 3 · high", "각 성분별 하한·상한 벡터입니다. 각 하한은 상한 이하여야 합니다. 보정된 벡터를 반환하므로 원본 변수에 대입합니다.")]),
+    "glm::abs": ("glm::abs(value)", [
+        ("1 · value", "각 성분의 절댓값을 구할 벡터입니다. 충돌 검사에서는 두 중심의 좌표 차이를 축별 거리로 바꿉니다.")]),
+    "glm::radians": ("glm::radians(degrees)", [
+        ("1 · degrees", "라디안으로 바꿀 도 단위 각도입니다. std::sin에 도 단위를 전달하기 전에 사용합니다. R 함수에는 도 단위를 그대로 전달합니다.")]),
+    "std::exp": ("std::exp(value)", [
+        ("1 · value", "자연상수 e의 지수입니다. exp(-1.5*dt)는 프레임 시간에 따른 속도 감쇠 비율이며 1.5를 키우면 더 빨리 느려집니다.")]),
+    "std::ceil": ("std::ceil(value)", [
+        ("1 · value", "올림할 숫자입니다. dt/0.005를 올림해서 한 번의 충돌 검사 시간 간격이 0.005초 이하가 되게 합니다.")]),
+    "std::max": ("std::max(a, b)", [
+        ("1 · a / 2 · b", "비교할 같은 자료형의 두 값입니다. 더 큰 값을 반환합니다. max(1,steps)는 반복 횟수를 최소 1로 만듭니다.")]),
     "MouseToFloor": ("MouseToFloor(hit)", [
         ("1 · hit (&)", "결과를 받을 vec3 변수입니다. 성공 시 클릭 방향과 바닥이 만나는 {x,floorY,z}가 저장됩니다. true를 반환했을 때만 사용합니다. 창 밖·바닥 밖·평행한 시선 등에서는 false를 반환합니다.")]),
     "glm::inverse": ("glm::inverse(matrix)", [
@@ -953,6 +1238,7 @@ FEATURE_ARGUMENTS = {
     "D07":"Sphere T S", "D08":"Primitive glm::vec3 glm::mat4", "D09":"Primitive glm::mat4",
     "D10":"GridFloor Box T S Primitive glm::mat4",
     "D11":"CheckerFloor Primitive glm::mat4",
+    "D12":"DrawRoom Primitive Box T glm::mat4 glm::vec3",
     "T01":"Box T", "T02":"Box T R", "T03":"Box T S", "T04":"Box T R S glm::vec3",
     "T05":"Box T R S", "T06":"OnUpdate Sphere T R S", "T07":"OnUpdate Sphere T R S",
     "T08":"OnKey OnUpdate Ground Box T R S glm::vec3",
@@ -965,15 +1251,20 @@ FEATURE_ARGUMENTS = {
     "M04":"OnUpdate std::min std::sin std::cos glm::vec2 Circle",
     "M05":"OnKey Rect", "M06":"OnUpdate CornerPath std::fmod Box T R S",
     "M07":"glm::vec2 std::atan2 glm::degrees Primitive T R",
+    "M08":"OnKey OnUpdate std::clamp std::sin glm::radians std::exp Box T R S",
     "C01":"HitRect Rect", "C02":"glm::vec2 OverlapRect Rect",
     "C03":"OnMouse glm::length glm::vec2 Rect", "C04":"OnKey OnUpdate Ground Box T",
     "C05":"OnUpdate LandOnTop glm::vec3 std::abs Box T S",
     "C06":"OnMouse std::remove_if erase OverlapRect Rect",
     "C07":"OnMouse OnUpdate HitRect push_back Rect",
+    "C08":"KeepInRoom OnUpdate glfwGetKey glm::clamp glm::length glm::normalize Box T S",
+    "C09":"BounceInRoom OnUpdate std::abs Sphere T S",
+    "C10":"BoxOverlap3D OnUpdate glm::abs std::max std::ceil std::abs Box T S",
     "A01":"OnUpdate Box glm::mat4", "A02":"OnUpdate std::sin Box T R S",
     "A03":"OnUpdate std::min glm::mix glm::vec3 Box T", "A04":"glm::mix Box S",
     "A05":"OnUpdate std::clamp Box T S", "A06":"DoorModel std::clamp Box T R S",
     "A07":"glm::mix glm::vec3 Primitive glm::mat4",
+    "A08":"OnKey OnUpdate HatchModel std::clamp Box T R S",
     "P01":"OnKey Box glm::mat4", "P02":"OnUpdate glm::normalize glm::cross glfwGetKey glm::vec3 Ground Box glm::mat4",
     "P03":"OnKey R glm::vec3 glm::vec4 Ground Box glm::mat4",
     "P04":"OnKey R glm::vec3 glm::vec4 Ground Box glm::mat4",

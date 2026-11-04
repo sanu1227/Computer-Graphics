@@ -67,6 +67,18 @@ void Primitive(GLenum mode,const std::vector<glm::vec3>& vertices,
     ::Primitive(mode,vertices,model,color);
 }
 """]
+    if id=="D12":
+        chunks += ["""
+std::vector<std::vector<glm::vec3>> roomProbeFaces;
+void Primitive(GLenum mode,const std::vector<glm::vec3>& vertices,
+               glm::mat4 model,glm::vec3 color) {
+    Require(mode==GL_TRIANGLE_FAN&&vertices.size()==4,"room uses quad faces");
+    std::vector<glm::vec3> face;
+    for(auto p:vertices) face.push_back(glm::vec3(model*glm::vec4(p,1)));
+    roomProbeFaces.push_back(face);
+    ::Primitive(mode,vertices,model,color);
+}
+"""]
     if id=="T08":
         chunks += ["""
 std::vector<glm::mat4> rotationProbeModels;
@@ -96,7 +108,7 @@ void Box(glm::mat4 model,glm::vec3 color) {
         'Require(glGetError()==GL_NO_ERROR,"'+id+' draw/update GL error");',
     ]
 by_id={f["id"]:f for f in FEATURES}
-# Verify the two combinations described in the reference with the same state.
+# Verify the combinations described in the reference with the same state.
 combo_doc=(ROOT/"Markdown"/"기능_조합.md").read_text(encoding="utf-8-sig")
 release=re.findall(fence+r"cpp\n(.*?)\n"+fence,combo_doc,re.S)[0]
 drag=by_id["I04"]["blocks"]
@@ -125,6 +137,19 @@ checks += [
     "WaveGroup::Reset();WaveGroup::Update(0.5f);BeginFrame();WaveGroup::Draw();",
     'Require(WaveGroup::waveAngle>0&&WaveGroup::waveAngle<=25&&glGetError()==GL_NO_ERROR,"wave group composition");'
 ]
+for namespace,title,id in [
+    ("RoomBounce","방 안에서 공 튕기기: D12 + C09","C09"),
+    ("RoomWalk","방 안에서 장애물 피하며 걷기: D12 + C10","C10"),
+]:
+    section=combo_doc.split("## "+title,1)[1].split("\n## ",1)[0]
+    draw=re.findall(fence+r"cpp\n(.*?)\n"+fence,section,re.S)[0]
+    blocks=by_id[id]["blocks"]
+    definitions += ["namespace "+namespace+" {",by_id["D12"]["blocks"]["G"],blocks["G"],
+        "void Reset(){"+blocks["R"]+"}","void Update(float dt){"+blocks["U"]+"}",
+        "void Draw(){"+draw+"}","}"]
+    checks += [namespace+"::Reset();for(int i=0;i<40;++i) "+namespace+"::Update(0.05f);",
+        "BeginFrame();"+namespace+"::Draw();",
+        'Require(glGetError()==GL_NO_ERROR,"'+namespace+' room composition");']
 base=base.replace("// FEATURE_BLOCK_END","\n".join(definitions)+"\n// FEATURE_BLOCK_END",1)
 count=len(FEATURES)
 logic=sum(bool(f["check"]) for f in FEATURES)
@@ -138,7 +163,7 @@ checks += [
     'Require(FeatureI03::clickItems.size()==5,"creation limit");',
     "eye={6,5,9};target={0,0,0};cameraUp={0,1,0};perspective=true;wireframe=false;",
     "background={0.08f,0.10f,0.15f};",
-    'std::cout<<"PASS: '+str(count)+' pasted features compiled and rendered; '+str(logic+2)+' focused logic checks; 2 compositions.\\n";'
+    'std::cout<<"PASS: '+str(count)+' pasted features compiled and rendered; '+str(logic+2)+' focused logic checks; 4 compositions.\\n";'
 ]
 base=base.replace(function(base,"OnCheck"),"void OnCheck() {\n"+"\n".join(checks)+"\n}")
 source=WORK/"examples"/"01_catalog.cpp"

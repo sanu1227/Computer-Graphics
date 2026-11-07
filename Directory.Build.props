@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.vcxproj' and '$(Platform)' == 'x64'">
+    <CourseOpenGLRoot>$(USERPROFILE)\source\libs\OpenGL</CourseOpenGLRoot>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup Condition="'$(CourseOpenGLRoot)' != ''">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(CourseOpenGLRoot)\include;$(CourseOpenGLRoot)\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(CourseOpenGLRoot)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;glew32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <Target Name="CopyCourseGLEWRuntime" AfterTargets="Build" Condition="'$(CourseOpenGLRoot)' != '' and '$(ConfigurationType)' == 'Application'">
+    <Copy SourceFiles="$(CourseOpenGLRoot)\bin\x64\glew32.dll" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

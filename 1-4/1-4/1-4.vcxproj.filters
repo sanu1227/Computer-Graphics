@@ -63,6 +63,9 @@
     <ClCompile Include="1-17.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="1-24.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="1-13-vertex.glsl">
@@ -85,9 +88,17 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="1-20.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="1-21.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="1-22.cpp"><Filter>Source Files</Filter></ClCompile>
-    <ClCompile Include="1-23.cpp"><Filter>Source Files</Filter></ClCompile>
+    <ClCompile Include="1-20.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="1-21.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="1-22.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="1-23.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

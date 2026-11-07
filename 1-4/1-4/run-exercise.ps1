@@ -1,5 +1,5 @@
 ﻿param(
-    [ValidateSet(16, 17, 18, 19, 20, 21, 22, 23)][int]$Number = 18,
+    [ValidateSet(16, 17, 18, 19, 20, 21, 22, 23, 24)][int]$Number = 18,
     [ValidateSet('Debug', 'Release')][string]$Configuration = 'Debug',
     [switch]$BuildOnly
 )

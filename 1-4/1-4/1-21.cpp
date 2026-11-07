@@ -293,8 +293,9 @@ void UpdateAnimation(float deltaTime)
             }
             else
             {
-                // 바닥의 기울기 성분 sin(angle)이 클수록 옆으로 빨리 미끄러진다.
-                float slopeAcceleration = 6.0f * std::sin(glm::radians(roomRoll));
+                // 월드 중력 (0, -6, 0)을 회전된 공간의 좌표로 바꾸면 X 성분은 -6*sin(angle)이다.
+                // 양의 각도에서는 오른쪽이 높으므로 왼쪽(-X)으로, 음의 각도에서는 반대로 미끄러진다.
+                float slopeAcceleration = -6.0f * std::sin(glm::radians(roomRoll));
                 cubeVelocity[i] += slopeAcceleration * stepTime;
                 // 감쇠를 적용하여 기울기를 되돌리면 서서히 멈추도록 한다.
                 float damping = std::exp(-1.5f * stepTime);

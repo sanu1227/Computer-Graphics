@@ -54,7 +54,30 @@ void Check(GLFWwindow* window)
             assert(std::abs(b.position.z)<=4-radius+0.001f);
         }
     }
-    roomRoll=30; UpdateAnimation(1); assert(cubeX[0]>0);
+    ResetObjects();
+    UpdateAnimation(1);
+    for(int i=0;i<3;i++) assert(Near(cubeX[i],0) && Near(cubeVelocity[i],0));
+    // 화면의 좌우만 보지 않고, 회전 후 월드 높이가 낮아지는 방향으로 미끄러지는지 검사한다.
+    for(float yaw : {0.0f,75.0f,180.0f})
+        for(float tilt : {-60.0f,-30.0f,30.0f,60.0f})
+        {
+            ResetObjects();
+            roomYaw=yaw;
+            roomRoll=tilt;
+            glm::mat4 rotation=RotationMatrix(roomYaw,{0,1,0})*RotationMatrix(roomRoll,{0,0,1});
+            float initialHeight[3];
+            for(int i=0;i<3;i++)
+                initialHeight[i]=(rotation*glm::vec4(cubeX[i],cubeY[i],-2.5f+i*2.5f,1)).y;
+            UpdateAnimation(0.5f);
+            for(int i=0;i<3;i++)
+            {
+                float height=(rotation*glm::vec4(cubeX[i],cubeY[i],-2.5f+i*2.5f,1)).y;
+                assert(height<initialHeight[i]);
+                float verticalVelocity=(rotation*glm::vec4(cubeVelocity[i],0,0,0)).y;
+                assert(verticalVelocity<0);
+            }
+        }
+    ResetObjects();
     floorOpen=true; for(int i=0;i<300;i++) UpdateAnimation(0.01f);
     assert(cubeY[0]<-4 && (balls.empty() || balls[0].position.y<-3));
     ResetObjects();
